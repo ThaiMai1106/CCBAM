@@ -52,6 +52,12 @@ class LabelSmoothingCrossEntropy(nn.Module):
         smooth_loss = -logprobs.mean(dim=-1)
         loss = self.confidence * nll_loss + self.smoothing * smooth_loss
         return loss.mean()#sys.path.append(str(Path('.').absolute().parent))
+from torchsummary import summary
+import torch
+from ptflops import get_model_complexity_info
+
+# Định nghĩa hàm để tính toán và in ra thông số
+# Hàm này nhận mô hình và kích thước input làm tham số
 def print_model_stats(model, input_size=(3, 224, 224), print_per_layer=False):
     """
     Tính toán và in ra MACs, FLOPs, và Parameters của mô hình.
