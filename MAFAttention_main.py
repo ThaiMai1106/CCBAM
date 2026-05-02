@@ -218,7 +218,7 @@ def main():
         model = build_mobilenet_v1(120, width_multiplier=1, cifar=False,pool_types=['avg','std'])
         model = model.to(device)
 
-        print(model)
+        #print(model)
 
         print('Number of model parameters: {}'.format(
         sum([p.data.nelement() for p in model.parameters()])))
