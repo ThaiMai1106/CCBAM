@@ -105,7 +105,7 @@ def get_args():
     #parser.add_argument('-r', '--data-root', type=str, required=True, help='Dataset root path.')
     parser.add_argument('-r', '--data-root', type=str, default='data', help='Dataset root path.')
     #parser.add_argument('-d', '--dataset', choices=['cifar10', 'cifar100', 'dogs'], required=True, help='Dataset name.')
-    parser.add_argument('-d', '--dataset', type=str, choices=['cifar10', 'cifar100', 'dogs'], default='cifar10', help='Dataset name.')
+    parser.add_argument('-d', '--dataset', type=str, choices=['cifar10', 'cifar100', 'dogs'], default='cifar100', help='Dataset name.')
     parser.add_argument('--download', action='store_true', help='Download the specified dataset before running the training.')
     #parser.add_argument('-a', '--architecture', type=str, required=True, help='Model architecture name.')
     parser.add_argument('-a', '--architecture', type=str, default='mobilenetv1_w1', help='Model architecture name.')
@@ -259,7 +259,7 @@ def main():
         if not os.path.exists(pathout):
             os.makedirs(pathout)
         # get model
-        model = build_mobilenet_v1(10, width_multiplier=1, cifar=True) 
+        model = build_mobilenet_v1(100, width_multiplier=1, cifar=True) 
         model = model.to(device)
 
         #print(model)
