@@ -20,7 +20,7 @@ class DepthwiseSeparableConvBlock(torch.nn.Module):
         self.use_res_skip = (in_channels == out_channels) and (stride == 1)
         self.conv_dw = conv3x3_dw_block(channels=in_channels, stride=stride)
         self.conv_pw = conv1x1_block(in_channels=in_channels, out_channels=out_channels)
-        self.cbamm = CBAM(out_channels)
+        self.cbamm = BAMM(out_channels, pool_types=pool_types)
     def forward(self, x):
         if self.use_res_skip:
             residual = x
@@ -55,7 +55,7 @@ class LinearBottleneck(torch.nn.Module):
         else:
             raise ValueError
         if self.use_se:
-            self.cbamm = CBAM(out_channels)
+            self.cbamm = BAMM(out_channels, pool_types=pool_types)
         self.conv3 = conv1x1_block(in_channels=mid_channels, out_channels=out_channels, activation=None)
 
     def forward(self, x):
@@ -253,7 +253,7 @@ class MobileNetV3(torch.nn.Module):
         self.backbone.add_module("final_conv1", conv1x1_block(in_channels=in_channels, out_channels=final_conv_channels[0], activation="hswish"))
         in_channels = final_conv_channels[0]
         if final_conv_se:
-            self.backbone.add_module("final_se", CBAM(in_channels))
+            self.backbone.add_module("final_se", BAMM(in_channels, pool_types=pool_types))
         self.backbone.add_module("final_pool", torch.nn.AdaptiveAvgPool2d(output_size=1))
         if len(final_conv_channels) > 1:
             self.backbone.add_module("final_conv2", conv1x1_block(in_channels=in_channels, out_channels=final_conv_channels[1], activation="hswish", use_bn=False))
