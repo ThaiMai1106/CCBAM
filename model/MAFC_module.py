@@ -50,7 +50,7 @@ class ChannelGate(nn.Module):
             else:
                 squeeze_all = torch.cat((squeeze_all,squeeze),1)
         return squeeze_all
-class DeptSaptial(nn.Module):
+class DeptSpatial(nn.Module):
     def __init__(self, gate_channel, reduction_ratio=8):
         super().__init__()
         mid = gate_channel // reduction_ratio
