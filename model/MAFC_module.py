@@ -7,56 +7,31 @@ class Flatten(nn.Module):
     def forward(self, x):
         return x.view(x.size(0), -1)
 class ChannelGate(nn.Module):
-    def __init__(self, gate_channel, reduction_ratio=16, num_layers=1,pool_types=None):
+    def __init__(self, gate_channel, reduction_ratio=16, num_layers=1):
         super(ChannelGate, self).__init__()
-        #self.gate_activation = gate_activation
-        self.pool_types = pool_types
-        if gate_channel // reduction_ratio == 0: #fixed for mobileNetV2
-            reduction_ratio = gate_channel
         self.gate_c = nn.Sequential()
         self.gate_c.add_module( 'flatten', Flatten() )
         gate_channels = [gate_channel]
         gate_channels += [gate_channel // reduction_ratio] * num_layers
         gate_channels += [gate_channel]
-
         for i in range( len(gate_channels) - 2 ):
-            self.gate_c.add_module( 'gate_c_fc_%d'%i, nn.Linear(len(pool_types)*gate_channels[i], gate_channels[i+1]) )
+            self.gate_c.add_module( 'gate_c_fc_%d'%i, nn.Linear(gate_channels[i], gate_channels[i+1]) )
             self.gate_c.add_module( 'gate_c_bn_%d'%(i+1), nn.BatchNorm1d(gate_channels[i+1]) )
             self.gate_c.add_module( 'gate_c_relu_%d'%(i+1), nn.ReLU() )
         self.gate_c.add_module( 'gate_c_fc_final', nn.Linear(gate_channels[-2], gate_channels[-1]) )
-        print("vao day:" + str(pool_types))
-    def forward(self, x):
-        # #avg_pool = F.avg_pool2d( in_tensor, in_tensor.size(2), stride=in_tensor.size(2) )
-        # avg_pool = F.avg_pool2d( x, (x.size(2), x.size(3)), stride=(x.size(2), x.size(3)))
-        # stdf = torch.std(x,(2,3),unbiased=True)#compute standard deviation
-        # stdf = stdf.reshape(stdf.size()[0],stdf.size()[1],1,1)#resize to be (,1,1) the same as out put of AdaptiveAvgPool2d , i.e., self.squeeze(residual)
-        # squeeze = torch.cat((stdf,avg_pool),dim=1)
-        # #return self.gate_c( avg_pool ).unsqueeze(2).unsqueeze(3).expand_as(x)
-        # return self.gate_c(squeeze).unsqueeze(2).unsqueeze(3).expand_as(x)
-        squeeze_all = self.get_channel_features(x,self.pool_types)
-        return self.gate_c(squeeze_all).unsqueeze(2).unsqueeze(3).expand_as(x)
-    def get_channel_features(self,x,pool_types):
-        squeeze_all = None
-        for pool_type in self.pool_types:
-            if pool_type=='avg':
-                squeeze = F.avg_pool2d( x, (x.size(2), x.size(3)), stride=(x.size(2), x.size(3)))
-            elif pool_type=='max':
-                squeeze = F.max_pool2d( x, (x.size(2), x.size(3)), stride=(x.size(2), x.size(3)))
-            elif pool_type=='std':
-                stdf = torch.std(x,(2,3),unbiased=True)#compute standard deviation
-                squeeze = stdf.reshape(stdf.size()[0],stdf.size()[1],1,1)#resize to be (,1,1) the same as out put of AdaptiveAvgPool2d , i.e., self.squeeze(residual)
-            if squeeze_all is None:
-                squeeze_all = squeeze
-            else:
-                squeeze_all = torch.cat((squeeze_all,squeeze),1)
-        return squeeze_all
+    def forward(self, in_tensor):
+        avg_pool = F.avg_pool2d( in_tensor, in_tensor.size(2), stride=in_tensor.size(2) )
+        return self.gate_c( avg_pool ).unsqueeze(2).unsqueeze(3).expand_as(in_tensor)
+
+
+
 class DeptSpatial(nn.Module):
-    def __init__(self, gate_channel, reduction_ratio=8):
+    def __init__(self, gate_channel, reduction_ratio=16):
         super().__init__()
         mid = gate_channel // reduction_ratio
-        #self.convdw = nn.Conv2d(mid, mid, kernel_size=7, stride=1, padding=3, groups=mid, bias=False)
+        self.convdw = nn.Conv2d(mid, mid, kernel_size=7, stride=1, padding=3, groups=mid, bias=False)
         # Optional: use this to change the kernel size of the depthwise convolution
-        self.convdw = nn.Conv2d(mid, mid, kernel_size=3, stride=1, padding=1, groups=mid, bias=False)
+        # self.convdw = nn.Conv2d(mid, mid, kernel_size=3, stride=1, padding=1, groups=mid, bias=False)
         
         self.gate_s = nn.Sequential()
         self.gate_s.add_module( "gate_s_conv_reduce0", nn.Conv2d(gate_channel, mid, kernel_size=1))
@@ -67,6 +42,7 @@ class DeptSpatial(nn.Module):
 
     def forward(self, in_tensor):
         return self.gate_s(in_tensor)
+
 class BAMM(nn.Module):
     def __init__(self, gate_channel, pool_types=['avg','std']):
         super(BAMM, self).__init__()
