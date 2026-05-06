@@ -44,9 +44,9 @@ class DeptSpatial(nn.Module):
         return self.gate_s(in_tensor)
 
 class BAMM(nn.Module):
-    def __init__(self, gate_channel, pool_types=['avg','std']):
+    def __init__(self, gate_channel):
         super(BAMM, self).__init__()
-        self.channel_att = ChannelGate(gate_channel,pool_types=pool_types)
+        self.channel_att = ChannelGate(gate_channel)
         self.spatial_att = DeptSpatial(gate_channel)
     def forward(self,in_tensor):
         att = 1 + F.sigmoid( self.channel_att(in_tensor) * self.spatial_att(in_tensor) )
