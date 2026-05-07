@@ -76,7 +76,7 @@ class ChannelPool(nn.Module):
                 spa_all = torch.cat((spa_all, spa1), dim=1)
         return spa_all
 class SpatialGate_new1(nn.Module):
-    def __init__(self, gate_channel, reduction_ratio=8):
+    def __init__(self, gate_channel, reduction_ratio=16):
         super(SpatialGate_new1, self).__init__()
         cout=gate_channel//reduction_ratio
         self.gate_s = nn.Sequential()
