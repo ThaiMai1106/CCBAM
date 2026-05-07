@@ -1,3 +1,4 @@
+
 import re
 import types
 
@@ -20,7 +21,7 @@ class DepthwiseSeparableConvBlock(torch.nn.Module):
         self.use_res_skip = (in_channels == out_channels) and (stride == 1)
         self.conv_dw = conv3x3_dw_block(channels=in_channels, stride=stride)
         self.conv_pw = conv1x1_block(in_channels=in_channels, out_channels=out_channels)
-        self.cbamm = BAMM(out_channels)
+        self.cbamm = BAM(out_channels, 16, pool_types=pool_types)
     def forward(self, x):
         if self.use_res_skip:
             residual = x
@@ -55,25 +56,25 @@ class LinearBottleneck(torch.nn.Module):
         else:
             raise ValueError
         if self.use_se:
-            self.cbamm = BAMM(out_channels)
+            self.cbamm = BAM(out_channels, 16, pool_types=pool_types)            
         self.conv3 = conv1x1_block(in_channels=mid_channels, out_channels=out_channels, activation=None)
-
+        
     def forward(self, x):
         if self.use_res_skip:
             residual = x
         x = self.conv1(x)
-        x = self.conv2(x)
-        x = self.conv3(x)
+        x = self.conv2(x)        
+        x = self.conv3(x)        
         if self.use_se:
             x = self.cbamm(x)
         if self.use_res_skip:
             x = x + residual
         return x
-
+   
 class MobileNetV1(torch.nn.Module):
     """
     Class for constructing MobileNetsV1.
-
+    
     If you are in doubt, please use the high-level function `get_mobilenet` to
     obtain ready-to-use models.
     """
@@ -135,7 +136,7 @@ class MobileNetV1(torch.nn.Module):
 class MobileNetV2(torch.nn.Module):
     """
     Class for constructing MobileNetsV2.
-
+    
     If you are in doubt, please use the high-level function `get_mobilenet` to
     obtain ready-to-use models.
     """
@@ -202,7 +203,7 @@ class MobileNetV2(torch.nn.Module):
 class MobileNetV3(torch.nn.Module):
     """
     Class for constructing MobileNetsV3.
-
+    
     If you are in doubt, please use the high-level function `get_mobilenet` to
     obtain ready-to-use models.
     """
@@ -252,8 +253,8 @@ class MobileNetV3(torch.nn.Module):
 
         self.backbone.add_module("final_conv1", conv1x1_block(in_channels=in_channels, out_channels=final_conv_channels[0], activation="hswish"))
         in_channels = final_conv_channels[0]
-        if final_conv_se:
-            self.backbone.add_module("final_se", BAMM(in_channels))
+        if final_conv_se:            
+            self.backbone.add_module("final_se", BAM(in_channels, 16, pool_types=pool_types))   
         self.backbone.add_module("final_pool", torch.nn.AdaptiveAvgPool2d(output_size=1))
         if len(final_conv_channels) > 1:
             self.backbone.add_module("final_conv2", conv1x1_block(in_channels=in_channels, out_channels=final_conv_channels[1], activation="hswish", use_bn=False))
@@ -291,17 +292,17 @@ def build_mobilenet_v1(num_classes, width_multiplier=1.0, cifar=False,pool_types
 
     """
     Construct a MobileNetV1 from the given set of parameters.
-
+    
     If you are in doubt, please use the high-level function `get_mobilenet` to
     obtain ready-to-use models.
-
+    
     Args:
         num_classes (int): Number of classes for the classification layer.
         width_multiplier (float): Multiplier for the number of channels.
         cifar (bool): if `True`, make the model suitable for the CIFAR10/100
             datasets. Otherwise, the model will be suited for ImageNet and
             fine-grained datasets.
-
+        
     Returns:
         The constructed MobileNetV1.
     """
@@ -333,17 +334,17 @@ def build_mobilenet_v1(num_classes, width_multiplier=1.0, cifar=False,pool_types
 def build_mobilenet_v2(num_classes, width_multiplier=1.0, cifar=False,pool_types=None):
     """
     Construct a MobileNetV2 from the given set of parameters.
-
+    
     If you are in doubt, please use the high-level function `get_mobilenet` to
     obtain ready-to-use models.
-
+    
     Args:
         num_classes (int): Number of classes for the classification layer.
         width_multiplier (float): Multiplier for the number of channels.
         cifar (bool): if `True`, make the model suitable for the CIFAR10/100
             datasets. Otherwise, the model will be suited for ImageNet and
             fine-grained datasets.
-
+        
     Returns:
         The constructed MobileNetV2.
     """
@@ -381,10 +382,10 @@ def build_mobilenet_v2(num_classes, width_multiplier=1.0, cifar=False,pool_types
 def build_mobilenet_v3(num_classes, version, width_multiplier=1.0, cifar=False, use_lightweight_head=True,pool_types=None):
     """
     Construct a MobileNetV3 from the given set of parameters.
-
+    
     If you are in doubt, please use the high-level function `get_mobilenet` to
     obtain ready-to-use models.
-
+    
     Args:
         num_classes (int): Number of classes for the classification layer.
         version (str): can be `"small"` or `"large"` for MobileNetV3-small or
@@ -395,7 +396,7 @@ def build_mobilenet_v3(num_classes, version, width_multiplier=1.0, cifar=False, 
             fine-grained datasets.
         use_lightweight_head (bool): If `True`, use a smaller head than
             originally defined to reduce model complexity.
-
+        
     Returns:
         The constructed MobileNetV3.
     """
