@@ -55,7 +55,7 @@ class LinearBottleneck(torch.nn.Module):
         else:
             raise ValueError
         if self.use_se:
-            self.cbamm = BAM(out_channels, pool_types=pool_types)
+            self.cbamm = BAMM(out_channels, pool_types=pool_types)
         self.conv3 = conv1x1_block(in_channels=mid_channels, out_channels=out_channels, activation=None)
 
     def forward(self, x):
