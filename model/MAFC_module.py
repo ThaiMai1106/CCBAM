@@ -50,29 +50,28 @@ class ChannelGate(nn.Module):
             else:
                 squeeze_all = torch.cat((squeeze_all,squeeze),1)
         return squeeze_all
-class DeptSpatial(nn.Module):
-    def __init__(self, gate_channel, reduction_ratio=16):
-        super().__init__()
-        mid = gate_channel // reduction_ratio
-        self.convdw = nn.Conv2d(mid, mid, kernel_size=7, stride=1, padding=3, groups=mid, bias=False)
-        # Optional: use this to change the kernel size of the depthwise convolution
-        #self.convdw = nn.Conv2d(mid, mid, kernel_size=3, stride=1, padding=1, groups=mid, bias=False)
-
+class SpatialGate(nn.Module):
+    def __init__(self, gate_channel, reduction_ratio=16, dilation_conv_num=2, dilation_val=4):
+        super(SpatialGate, self).__init__()
+        if gate_channel // reduction_ratio == 0: #fixed for mobileNetV2
+            reduction_ratio = gate_channel
         self.gate_s = nn.Sequential()
-        self.gate_s.add_module( "gate_s_conv_reduce0", nn.Conv2d(gate_channel, mid, kernel_size=1))
-        self.gate_s.add_module( "gate_s_conv_depthwise", self.convdw)
-        self.gate_s.add_module( "gate_s_bn0", nn.BatchNorm2d(mid))
-        self.gate_s.add_module( "gate_s_relu0", nn.ReLU(inplace=True))
-        self.gate_s.add_module( "gate_s_conv_reduce",nn.Conv2d(mid, 1, kernel_size=1))
-
+        self.gate_s.add_module( 'gate_s_conv_reduce0', nn.Conv2d(gate_channel, gate_channel//reduction_ratio, kernel_size=1))
+        self.gate_s.add_module( 'gate_s_bn_reduce0',	nn.BatchNorm2d(gate_channel//reduction_ratio) )
+        self.gate_s.add_module( 'gate_s_relu_reduce0',nn.ReLU() )
+        for i in range( dilation_conv_num ):
+            self.gate_s.add_module( 'gate_s_conv_di_%d'%i, nn.Conv2d(gate_channel//reduction_ratio, gate_channel//reduction_ratio, kernel_size=3, \
+						padding=dilation_val, dilation=dilation_val) )
+            self.gate_s.add_module( 'gate_s_bn_di_%d'%i, nn.BatchNorm2d(gate_channel//reduction_ratio) )
+            self.gate_s.add_module( 'gate_s_relu_di_%d'%i, nn.ReLU() )
+        self.gate_s.add_module( 'gate_s_conv_final', nn.Conv2d(gate_channel//reduction_ratio, 1, kernel_size=1) )
     def forward(self, in_tensor):
-        return self.gate_s(in_tensor)
-
+        return self.gate_s( in_tensor ).expand_as(in_tensor)
 class BAMM(nn.Module):
     def __init__(self, gate_channel, pool_types=None):
         super(BAMM, self).__init__()
         self.channel_att = ChannelGate(gate_channel,pool_types=pool_types)
-        self.spatial_att = DeptSpatial(gate_channel)
+        self.spatial_att = SpatialGate(gate_channel)
     def forward(self,in_tensor):
         att = 1 + F.sigmoid( self.channel_att(in_tensor) * self.spatial_att(in_tensor) )
         return att * in_tensor
