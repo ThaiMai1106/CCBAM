@@ -26,7 +26,7 @@ class ChannelGate(nn.Module):
 
 
 class DeptSpatial(nn.Module):
-    def __init__(self, gate_channel, reduction_ratio=8):
+    def __init__(self, gate_channel, reduction_ratio=16):
         super().__init__()
         mid = gate_channel // reduction_ratio
         self.convdw = nn.Conv2d(mid, mid, kernel_size=7, stride=1, padding=3, groups=mid, bias=False)
