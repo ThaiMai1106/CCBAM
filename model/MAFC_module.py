@@ -29,9 +29,9 @@ class DeptSpatial(nn.Module):
     def __init__(self, gate_channel, reduction_ratio=16):
         super().__init__()
         mid = gate_channel // reduction_ratio
-        #self.convdw = nn.Conv2d(mid, mid, kernel_size=7, stride=1, padding=3, groups=mid, bias=False)
+        self.convdw = nn.Conv2d(mid, mid, kernel_size=7, stride=1, padding=3, groups=mid, bias=False)
         # Optional: use this to change the kernel size of the depthwise convolution
-        self.convdw = nn.Conv2d(mid, mid, kernel_size=3, stride=1, padding=1, groups=mid, bias=False)
+        #self.convdw = nn.Conv2d(mid, mid, kernel_size=3, stride=1, padding=1, groups=mid, bias=False)
         
         self.gate_s = nn.Sequential()
         self.gate_s.add_module( "gate_s_conv_reduce0", nn.Conv2d(gate_channel, mid, kernel_size=1))
