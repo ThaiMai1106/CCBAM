@@ -25,29 +25,35 @@ class ChannelGate(nn.Module):
 
 
 
-class DeptSpatial(nn.Module):
+class SpatialGate_LKA_Lite(nn.Module):
     def __init__(self, gate_channel, reduction_ratio=16):
         super().__init__()
-        mid = gate_channel // reduction_ratio
-        self.convdw = nn.Conv2d(mid, mid, kernel_size=7, stride=1, padding=3, groups=mid, bias=False)
-        # Optional: use this to change the kernel size of the depthwise convolution
-        #self.convdw = nn.Conv2d(mid, mid, kernel_size=3, stride=1, padding=1, groups=mid, bias=False)
-        
-        self.gate_s = nn.Sequential()
-        self.gate_s.add_module( "gate_s_conv_reduce0", nn.Conv2d(gate_channel, mid, kernel_size=1))
-        self.gate_s.add_module( "gate_s_conv_depthwise", self.convdw)
-        self.gate_s.add_module( "gate_s_bn0", nn.BatchNorm2d(mid))
-        self.gate_s.add_module( "gate_s_relu0", nn.ReLU(inplace=True))
-        self.gate_s.add_module( "gate_s_conv_reduce",nn.Conv2d(mid, 1, kernel_size=1))
+        mid = max(1, gate_channel // reduction_ratio)
+        self.gate_s = nn.Sequential(
+            nn.Conv2d(gate_channel, mid, kernel_size=1, bias=False),
+            nn.BatchNorm2d(mid),
+            nn.ReLU(inplace=True),
 
-    def forward(self, in_tensor):
-        return self.gate_s(in_tensor)
+            nn.Conv2d(mid, mid, kernel_size=5, padding=2, groups=mid, bias=False),
+            nn.BatchNorm2d(mid),
+            nn.ReLU(inplace=True),
+
+            nn.Conv2d(mid, mid, kernel_size=7, padding=9, dilation=3,
+                      groups=mid, bias=False),
+            nn.BatchNorm2d(mid),
+            nn.ReLU(inplace=True),
+
+            nn.Conv2d(mid, 1, kernel_size=1, bias=True),
+        )
+
+    def forward(self, x):
+        return self.gate_s(x)
 
 class DeptBAM(nn.Module):
     def __init__(self, gate_channel):
         super().__init__()
         self.channel_att = ChannelGate(gate_channel)
-        self.spatial_att = DeptSpatial(gate_channel)
+        self.spatial_att = Spatial_LKA_Lite(gate_channel)
 
     def forward(self, x):
         logit = self.channel_att(x) * self.spatial_att(x)   
