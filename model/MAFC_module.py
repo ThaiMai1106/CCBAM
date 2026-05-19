@@ -34,7 +34,7 @@ class SpatialGate_LKA_Lite(nn.Module):
             nn.BatchNorm2d(mid),
             nn.ReLU(inplace=True),
 
-            nn.Conv2d(mid, mid, kernel_size=5, padding=2, groups=mid, bias=False),
+            nn.Conv2d(mid, mid, kernel_size=7, padding=3, groups=mid, bias=False),
             nn.BatchNorm2d(mid),
             nn.ReLU(inplace=True),
 
