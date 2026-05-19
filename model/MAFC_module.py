@@ -53,7 +53,7 @@ class DeptBAM(nn.Module):
     def __init__(self, gate_channel):
         super().__init__()
         self.channel_att = ChannelGate(gate_channel)
-        self.spatial_att = Spatial_LKA_Lite(gate_channel)
+        self.spatial_att = SpatialGate_LKA_Lite(gate_channel)
 
     def forward(self, x):
         logit = self.channel_att(x) * self.spatial_att(x)   
