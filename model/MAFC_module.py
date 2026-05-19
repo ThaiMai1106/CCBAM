@@ -103,7 +103,7 @@ class DeptBAM(nn.Module):
         self.ChannelGate = ChannelGate(gate_channels, reduction_ratio, pool_types)
         self.no_spatial=no_spatial
         if not no_spatial:
-            self.SpatialGate = SpatialGate_LKA_Lite(gate_channel)
+            self.SpatialGate = SpatialGate_LKA_Lite(gate_channels)
     def forward(self, x):
         x_out = self.ChannelGate(x)
         if not self.no_spatial:
